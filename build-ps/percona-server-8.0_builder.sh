@@ -441,7 +441,7 @@ install_deps() {
                 # add_percona_yum_repo
                 yum install -y https://repo.percona.com/yum/percona-release-latest.noarch.rpm
                 percona-release enable tools testing
-                percona-release enable tools experimental
+                #percona-release enable tools experimental
             else
                 yum -y install yum-utils
                 yum-config-manager --enable ol9_codeready_builder
@@ -453,8 +453,9 @@ install_deps() {
             fi
         fi
         yum -y update
-        yum -y install epel-release
+#        yum -y install epel-release
         yum -y install git numactl-devel rpm-build gcc-c++ gperf ncurses-devel perl readline-devel openssl-devel jemalloc zstd
+        yum -y install epel-release
         yum -y install time zlib-devel libaio-devel bison cmake3 cmake pam-devel libeatmydata jemalloc-devel pkg-config
         yum -y install perl-Time-HiRes libcurl-devel openldap-devel unzip wget libcurl-devel patchelf systemd-devel
         yum -y install perl-Env perl-Data-Dumper perl-JSON perl-Digest perl-Digest-MD5 perl-Digest-Perl-MD5 || true
@@ -732,7 +733,7 @@ build_mecab_lib(){
     ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
     MECAB_TARBAL="mecab-0.996.tar.gz"
     #MECAB_LINK="http://jenkins.percona.com/downloads/mecab/${MECAB_TARBAL}"
-    MECAB_LINK="https://downloads.percona.com/downloads/TESTING/issue-CUSTO83/${MECAB_TARBAL}"
+    MECAB_LINK="https://downloads.percona.com/downloads/TESTING/issue-CUSTO83/mecab/${MECAB_TARBAL}"
     MECAB_DIR="${WORKDIR}/${MECAB_TARBAL%.tar.gz}"
     MECAB_INSTALL_DIR="${WORKDIR}/mecab-install"
     rm -f ${MECAB_TARBAL}
@@ -764,7 +765,7 @@ build_mecab_dict(){
     ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
     MECAB_IPADIC_TARBAL="mecab-ipadic-2.7.0-20070801.tar.gz"
     #MECAB_IPADIC_LINK="http://jenkins.percona.com/downloads/mecab/${MECAB_IPADIC_TARBAL}"
-    MECAB_IPADIC_LINK="https://downloads.percona.com/downloads/TESTING/issue-CUSTO83/${MECAB_IPADIC_TARBAL}"
+    MECAB_IPADIC_LINK="https://downloads.percona.com/downloads/TESTING/issue-CUSTO83/mecab/${MECAB_IPADIC_TARBAL}"
     MECAB_IPADIC_DIR="${WORKDIR}/${MECAB_IPADIC_TARBAL%.tar.gz}"
     rm -f ${MECAB_IPADIC_TARBAL}
     rm -rf ${MECAB_IPADIC_DIR}
@@ -1075,6 +1076,8 @@ build_deb(){
     cat call-home.sh >> percona-server-server"${postfix}".postinst
     echo "CALLHOME" >> percona-server-server"${postfix}".postinst
     echo "bash +x /tmp/call-home.sh -f \"PRODUCT_FAMILY_PS\" -v \"${VERSION}-${RELEASE}-${DEB_RELEASE}\" -d \"PACKAGE\" &>/dev/null || :" >> percona-server-server"${postfix}".postinst
+    echo "chgrp percona-telemetry /usr/local/percona/telemetry_uuid" >> percona-server-server"${postfix}".postinst
+    echo "chmod 664 /usr/local/percona/telemetry_uuid" >> percona-server-server"${postfix}".postinst
     echo "rm -rf /tmp/call-home.sh" >> percona-server-server"${postfix}".postinst
     echo "exit 0" >> percona-server-server"${postfix}".postinst
     rm -f call-home.sh
