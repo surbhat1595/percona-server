@@ -231,6 +231,7 @@ if [ -n "$(command -v rpm)" ]; then
   then
     COMMON_FLAGS=`echo " ${COMMON_FLAGS} " | \
               sed -e 's/-Wall/-Wall -Wno-error=stringop-overflow -Wno-error=restrict -Wno-error=maybe-uninitialized -Wno-error=array-bounds -Wno-error=alloc-size-larger-than= -Wno-error=stringop-truncation/' \
+            #  sed -e 's/ -O[0-9]* / /' \
                   -e 's/-Wp,-D_FORTIFY_SOURCE=2//' \
                   -e 's/ -unroll2 / /' \
                   -e 's/ -ip / /' \
@@ -318,9 +319,9 @@ fi
 
 (
 if [ x"${FIPSMODE}" == x1 ]; then
-    LIBLIST="libgssapi.so libldap_r-2.4.so.2 libldap.so.2 liblber-2.4.so.2 liblber.so.2 libreadline.so libtinfo.so libbrotlidec.so libbrotlicommon.so librtmp.so libgssapi_krb5.so libkrb5.so libssl3.so libsmime3.so libnss3.so libnssutil3.so libplc4.so libnspr4.so libplds4.so libncurses.so.5 libtinfo.so.5 component_encryption_udf.so component_keyring_kms.so component_masking_functions.so"
+    LIBLIST="libaio.so.1 libnuma.so.1 libgssapi.so libldap_r-2.4.so.2 libldap.so.2 liblber-2.4.so.2 liblber.so.2 libreadline.so libtinfo.so libbrotlidec.so libbrotlicommon.so librtmp.so libgssapi_krb5.so libkrb5.so libssl3.so libsmime3.so libnss3.so libnssutil3.so libplc4.so libnspr4.so libplds4.so libncurses.so.5 libtinfo.so.5 component_encryption_udf.so component_keyring_kms.so component_masking_functions.so"
 else
-    LIBLIST="libgssapi.so libldap_r-2.4.so.2 libldap.so.2 liblber-2.4.so.2 liblber.so.2 libcrypto.so libssl.so libreadline.so libtinfo.so libsasl2.so libbrotlidec.so libbrotlicommon.so librtmp.so libgssapi_krb5.so libkrb5.so libk5crypto.so libssl3.so libsmime3.so libnss3.so libnssutil3.so libplc4.so libnspr4.so libssl3.so libplds4.so libncurses.so.5 libtinfo.so.5 component_encryption_udf.so component_keyring_kms.so component_masking_functions.so"
+    LIBLIST="libaio.so.1 libnuma.so.1 libgssapi.so libldap_r-2.4.so.2 libldap.so.2 liblber-2.4.so.2 liblber.so.2 libcrypto.so libssl.so libreadline.so libtinfo.so libsasl2.so libbrotlidec.so libbrotlicommon.so librtmp.so libgssapi_krb5.so libkrb5.so libk5crypto.so libssl3.so libsmime3.so libnss3.so libnssutil3.so libplc4.so libnspr4.so libssl3.so libplds4.so libncurses.so.5 libtinfo.so.5 component_encryption_udf.so component_keyring_kms.so component_masking_functions.so"
 fi
     DIRLIST="bin lib lib/private lib/plugin lib/mysqlrouter/plugin lib/mysqlrouter/private"
 
