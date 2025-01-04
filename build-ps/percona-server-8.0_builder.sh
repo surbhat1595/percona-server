@@ -333,11 +333,15 @@ get_sources(){
 }
 
 get_system(){
-    if [ -f /etc/redhat-release ]; then
+    if [ -f /etc/redhat-release ] || [ -f /etc/amazon-linux-release ]; then
 	GLIBC_VER_TMP="$(rpm glibc -qa --qf %{VERSION})"
-        RHEL=$(rpm --eval %rhel)
+        RHEL=$(rpm --eval "%{?rhel}%{?amzn}")
         ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
-        OS_NAME="el$RHEL"
+        if [ -f /etc/amazon-linux-release ]; then
+            export OS_NAME="amzn$RHEL"
+        else
+            export OS_NAME="el$RHEL"
+        fi
         OS="rpm"
     else
 	GLIBC_VER_TMP="$(dpkg-query -W -f='${Version}' libc6 | awk -F'-' '{print $1}')"
@@ -381,7 +385,7 @@ install_deps() {
     CURPLACE=$(pwd)
 
     if [ "x$OS" = "xrpm" ]; then
-        RHEL=$(rpm --eval %rhel)
+        RHEL=$(rpm --eval "%{?rhel}%{?amzn}")
         ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
         if [ "x${RHEL}" = "x7" -o "x${RHEL}" = "x8" ]; then
             switch_to_vault_repo
@@ -394,13 +398,17 @@ install_deps() {
               #  percona-release enable tools experimental
             fi
             yum -y install yum-utils
-            yum-config-manager --enable ol"${RHEL}"_codeready_builder
+            if [ "x${RHEL}" != "x2023" ]; then
+                yum-config-manager --enable ol"${RHEL}"_codeready_builder
+            fi
         else
             yum -y install yum-utils
             yum-config-manager --enable ol"${RHEL}"_codeready_builder
         fi
         yum -y update
-        yum -y install epel-release
+        if [ "x${RHEL}" != "x2023" ]; then
+            yum -y install epel-release
+        fi
         yum -y install git numactl-devel rpm-build gcc-c++ gperf ncurses-devel perl readline-devel openssl-devel jemalloc zstd
         yum -y install time zlib-devel libaio-devel bison cmake3 cmake pam-devel libeatmydata jemalloc-devel pkg-config
         yum -y install perl-Time-HiRes libcurl-devel openldap-devel unzip wget libcurl-devel patchelf systemd-devel
@@ -472,7 +480,14 @@ install_deps() {
                 popd
             fi
         else
-            yum -y install MySQL-python
+            if [ "x${RHEL}" != "x2023" ]; then
+                yum -y install MySQL-python
+            fi
+        fi
+        if [ "x$RHEL" = "x2023" ]; then
+            yum -y install libtirpc-devel libatomic annobin-annocheck annobin-plugin-gcc
+	    yum -y install pip mariadb105-devel python3-devel
+	    pip install mysqlclient
         fi
     else
         apt-get update
@@ -761,7 +776,7 @@ build_rpm(){
     mkdir -vp rpmbuild/{SOURCES,SPECS,BUILD,SRPMS,RPMS}
     cp $SRC_RPM rpmbuild/SRPMS/
 
-    RHEL=$(rpm --eval %rhel)
+    RHEL=$(rpm --eval "%{?rhel}%{?amzn}")
     ARCH=$(echo $(uname -m) | sed -e 's:i686:i386:g')
     #
     echo "RHEL=${RHEL}" >> percona-server-8.0.properties
@@ -794,15 +809,15 @@ build_rpm(){
     fi
     if [ ${ARCH} = x86_64 ]; then
         if [[ "x${FIPSMODE}" == "x1" ]]; then
-            rpmbuild --define "_topdir ${WORKDIR}/rpmbuild" --define "dist .el${RHEL}" --define "with_mecab ${MECAB_INSTALL_DIR}/usr" --define "enable_fipsmode 1" --rebuild rpmbuild/SRPMS/${SRCRPM}
+            rpmbuild --define "_topdir ${WORKDIR}/rpmbuild" --define "dist .${OS_NAME}" --define "with_mecab ${MECAB_INSTALL_DIR}/usr" --define "enable_fipsmode 1" --rebuild rpmbuild/SRPMS/${SRCRPM}
         else
-            rpmbuild --define "_topdir ${WORKDIR}/rpmbuild" --define "dist .el${RHEL}" --define "with_mecab ${MECAB_INSTALL_DIR}/usr" --rebuild rpmbuild/SRPMS/${SRCRPM}
+            rpmbuild --define "_topdir ${WORKDIR}/rpmbuild" --define "dist .${OS_NAME}" --define "with_mecab ${MECAB_INSTALL_DIR}/usr" --rebuild rpmbuild/SRPMS/${SRCRPM}
         fi
     else
         if [[ "x${FIPSMODE}" == "x1" ]]; then
-            rpmbuild --define "_topdir ${WORKDIR}/rpmbuild" --define "dist .el${RHEL}" --define "with_tokudb 0" --define "with_mecab ${MECAB_INSTALL_DIR}/usr" --define "enable_fipsmode 1" --rebuild rpmbuild/SRPMS/${SRCRPM}
+            rpmbuild --define "_topdir ${WORKDIR}/rpmbuild" --define "dist .${OS_NAME}" --define "with_tokudb 0" --define "with_mecab ${MECAB_INSTALL_DIR}/usr" --define "enable_fipsmode 1" --rebuild rpmbuild/SRPMS/${SRCRPM}
         else
-            rpmbuild --define "_topdir ${WORKDIR}/rpmbuild" --define "dist .el${RHEL}" --define "with_tokudb 0" --define "with_mecab ${MECAB_INSTALL_DIR}/usr" --rebuild rpmbuild/SRPMS/${SRCRPM}
+            rpmbuild --define "_topdir ${WORKDIR}/rpmbuild" --define "dist .${OS_NAME}" --define "with_tokudb 0" --define "with_mecab ${MECAB_INSTALL_DIR}/usr" --rebuild rpmbuild/SRPMS/${SRCRPM}
         fi
     fi
 
@@ -1046,7 +1061,7 @@ build_tarball(){
     #
     if [ -f /etc/redhat-release ]; then
       export OS_RELEASE="centos$(lsb_release -sr | awk -F'.' '{print $1}')"
-      RHEL=$(rpm --eval %rhel)
+      RHEL=$(rpm --eval "%{?rhel}%{?amzn}")
       if [ "x${RHEL}" = "x6" ]; then
           source /opt/rh/devtoolset-8/enable
       fi
